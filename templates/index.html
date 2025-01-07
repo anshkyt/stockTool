@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Market Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            background-color: #007BFF;
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        input[type="text"] {
+            width: 350px;
+            height: 55px;
+            font-size: 20px;
+            padding: 10px;
+            border: 2px solid #007BFF;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        button {
+            width: 220px;
+            height: 60px;
+            font-size: 20px;
+            font-weight: bold;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .result {
+            margin-top: 30px;
+            width: 80%;
+        }
+
+        #loading {
+            text-align: center;
+            font-size: 20px;
+            color: #007BFF;
+        }
+
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            border: 1px solid #ddd;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        .recommendation {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .recommendation.buy {
+            color: green;
+        }
+
+        .recommendation.sell {
+            color: red;
+        }
+
+        .recommendation.hold {
+            color: orange;
+        }
+
+        footer {
+            text-align: center;
+            padding: 15px;
+            background-color: #007BFF;
+            color: white;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        Stock Market Tool
+    </header>
+
+    <div class="container">
+        <form id="stockForm" onsubmit="return fetchStockData(event)">
+            <input type="text" id="symbol" placeholder="Enter Stock Symbol" required>
+            <br>
+            <button type="submit">Get Stock Data</button>
+        </form>
+        <div id="loading" style="display:none;">Fetching data...</div>
+        <div class="result" id="result"></div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 Ansh Krishna Inc.</p>
+    </footer>
+
+    <script>
+        function fetchStockData(event) {
+            event.preventDefault(); 
+
+            const symbol = document.getElementById('symbol').value;
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+
+            resultDiv.innerHTML = '';
+            loadingDiv.style.display = 'block';
+
+            fetch(`/api/stock/${symbol}`)
+                .then(response => response.json())
+                .then(data => {
+                    loadingDiv.style.display = 'none';
+
+                    if (data.error) {
+                        resultDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+                    } else {
+                        const rsi = data.rsi.latest_rsi;
+                        const recommendation = data.rsi.recommendation;
+                        let dailyDataHtml = `
+                            <h3>Stock Data for ${symbol.toUpperCase()}</h3>
+                            <p>RSI: ${rsi}</p>
+                            <p class="recommendation ${recommendation.toLowerCase()}">Recommendation: ${recommendation}</p>
+                            <h4>Daily Stock Data:</h4>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>High</th>
+                                        <th>Low</th>
+                                        <th>Average</th>
+                                        <th>Change (%)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+                        
+                        data.daily.forEach(item => {
+                            dailyDataHtml += `
+                                <tr>
+                                    <td>${item.date}</td>
+                                    <td>${item.high.toFixed(2)}</td>
+                                    <td>${item.low.toFixed(2)}</td>
+                                    <td>${item.average.toFixed(2)}</td>
+                                    <td>${item.percent_change ? item.percent_change.toFixed(2) + '%' : 'N/A'}</td>
+                                </tr>
+                            `;
+                        });
+
+                        dailyDataHtml += '</tbody></table>';
+                        resultDiv.innerHTML = dailyDataHtml;
+                    }
+                })
+                .catch(error => {
+                    loadingDiv.style.display = 'none';
+                    resultDiv.innerHTML = `<p>Error: Unable to fetch data</p>`;
+                });
+        }
+    </script>
+</body>
+</html>
